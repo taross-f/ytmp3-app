@@ -1,6 +1,13 @@
 import { NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+import fs from 'fs';
+import path from 'path';
+import { mkdir } from 'fs/promises';
+
+const execAsync = promisify(exec);
 
 const requestSchema = z.object({
   url: z.string().url().refine(
@@ -18,11 +25,21 @@ interface ConversionJob {
   result?: {
     downloadUrl?: string;
     fileName?: string;
+    filePath?: string;
   };
   createdAt: Date;
 }
 
 const conversionJobs = new Map<string, ConversionJob>();
+const TMP_DIR = '/tmp/youtube-converter';
+
+try {
+  if (!fs.existsSync(TMP_DIR)) {
+    fs.mkdirSync(TMP_DIR, { recursive: true });
+  }
+} catch (error) {
+  console.error('一時ディレクトリの作成に失敗:', error);
+}
 
 export async function POST(request: Request) {
   try {
@@ -58,31 +75,60 @@ async function startConversionProcess(jobId: string, url: string) {
     if (!job) return;
     
     job.status = 'processing';
+    job.progress = 5;
     conversionJobs.set(jobId, job);
     
-    for (let i = 1; i <= 10; i++) {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const updatedJob = conversionJobs.get(jobId);
-      if (!updatedJob) return;
-      
-      updatedJob.progress = i * 10;
-      conversionJobs.set(jobId, updatedJob);
+    const videoId = extractVideoId(url);
+    const outputDir = path.join(TMP_DIR, jobId);
+    await mkdir(outputDir, { recursive: true });
+    
+    const outputPath = path.join(outputDir, `${videoId}.mp3`);
+    
+    job.progress = 10;
+    conversionJobs.set(jobId, job);
+    
+    const downloadCmd = `yt-dlp -f 'bestaudio[ext=m4a]/bestaudio' -o "${path.join(outputDir, 'audio.%(ext)s')}" "${url}"`;
+    console.log('ダウンロードコマンド:', downloadCmd);
+    
+    const { stdout: downloadOutput } = await execAsync(downloadCmd);
+    console.log('ダウンロード出力:', downloadOutput);
+    
+    job.progress = 50;
+    conversionJobs.set(jobId, job);
+    
+    const files = fs.readdirSync(outputDir);
+    const audioFile = files.find(file => file.startsWith('audio.'));
+    
+    if (!audioFile) {
+      throw new Error('ダウンロードしたオーディオファイルが見つかりません');
     }
+    
+    const audioPath = path.join(outputDir, audioFile);
+    
+    const convertCmd = `ffmpeg -i "${audioPath}" -codec:a libmp3lame -qscale:a 2 "${outputPath}"`;
+    console.log('変換コマンド:', convertCmd);
+    
+    const { stdout: convertOutput } = await execAsync(convertCmd);
+    console.log('変換出力:', convertOutput);
+    
+    job.progress = 90;
+    conversionJobs.set(jobId, job);
+    
+    fs.unlinkSync(audioPath);
     
     const completedJob = conversionJobs.get(jobId);
     if (!completedJob) return;
-    
-    const videoId = extractVideoId(url);
     
     completedJob.status = 'completed';
     completedJob.progress = 100;
     completedJob.result = {
       downloadUrl: `/api/download/${jobId}`,
-      fileName: `${videoId}.mp3`
+      fileName: `${videoId}.mp3`,
+      filePath: outputPath
     };
     
     conversionJobs.set(jobId, completedJob);
+    console.log('変換完了:', completedJob);
   } catch (error) {
     console.error('変換プロセスエラー:', error);
     
@@ -111,4 +157,32 @@ function extractVideoId(url: string): string {
 
 export function getConversionJob(jobId: string): ConversionJob | undefined {
   return conversionJobs.get(jobId);
+}
+
+export function cleanupOldJobs() {
+  const now = new Date();
+  const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  
+  for (const [jobId, job] of conversionJobs.entries()) {
+    if (job.createdAt < oneDayAgo) {
+      if (job.result?.filePath && fs.existsSync(job.result.filePath)) {
+        try {
+          fs.unlinkSync(job.result.filePath);
+        } catch (error) {
+          console.error(`ジョブ ${jobId} のファイル削除に失敗:`, error);
+        }
+      }
+      
+      const jobDir = path.join(TMP_DIR, jobId);
+      if (fs.existsSync(jobDir)) {
+        try {
+          fs.rmdirSync(jobDir, { recursive: true });
+        } catch (error) {
+          console.error(`ジョブディレクトリ ${jobDir} の削除に失敗:`, error);
+        }
+      }
+      
+      conversionJobs.delete(jobId);
+    }
+  }
 }

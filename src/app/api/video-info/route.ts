@@ -1,5 +1,11 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+import path from 'path';
+import fs from 'fs';
+
+const execAsync = promisify(exec);
 
 const requestSchema = z.object({
   url: z.string().url().refine(
@@ -15,13 +21,7 @@ export async function POST(request: Request) {
     
     const videoId = extractVideoId(url);
     
-    const videoData = {
-      id: videoId,
-      title: 'Rick Astley - Never Gonna Give You Up (Official Music Video)',
-      thumbnail: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
-      author: 'Rick Astley',
-      duration: '3:33'
-    };
+    const videoData = await getVideoInfo(url, videoId);
     
     return NextResponse.json(videoData);
   } catch (error) {
@@ -31,6 +31,42 @@ export async function POST(request: Request) {
       { status: 400 }
     );
   }
+}
+
+async function getVideoInfo(url: string, videoId: string) {
+  try {
+    const { stdout } = await execAsync(`yt-dlp --dump-json "${url}"`);
+    const videoInfo = JSON.parse(stdout);
+    
+    const title = videoInfo.title || 'Unknown Title';
+    const thumbnail = videoInfo.thumbnail || `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+    const author = videoInfo.uploader || 'Unknown Author';
+    
+    const duration = formatDuration(videoInfo.duration || 0);
+    
+    return {
+      id: videoId,
+      title,
+      thumbnail,
+      author,
+      duration
+    };
+  } catch (error) {
+    console.error('yt-dlpエラー:', error);
+    return {
+      id: videoId,
+      title: 'Video Title (情報取得に失敗しました)',
+      thumbnail: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
+      author: 'Unknown',
+      duration: '0:00'
+    };
+  }
+}
+
+function formatDuration(seconds: number): string {
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = Math.floor(seconds % 60);
+  return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
 }
 
 function extractVideoId(url: string): string {

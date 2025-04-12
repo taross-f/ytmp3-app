@@ -1,5 +1,9 @@
 import { NextResponse } from 'next/server';
 import { getConversionJob } from '../../convert/route';
+import fs from 'fs';
+import { promisify } from 'util';
+
+const readFileAsync = promisify(fs.readFile);
 
 export async function GET(
   request: Request,
@@ -24,22 +28,28 @@ export async function GET(
       );
     }
     
-    if (job.status !== 'completed' || !job.result?.fileName) {
+    if (job.status !== 'completed' || !job.result?.fileName || !job.result?.filePath) {
       return NextResponse.json(
         { error: '変換が完了していないか、ファイルが利用できません' },
         { status: 400 }
       );
     }
     
-    const videoId = job.result.fileName.replace('.mp3', '');
+    if (!fs.existsSync(job.result.filePath)) {
+      return NextResponse.json(
+        { error: 'ファイルが見つかりません' },
+        { status: 404 }
+      );
+    }
     
-    const mockMp3Data = new Uint8Array(1024).buffer;
+    const fileData = await readFileAsync(job.result.filePath);
     
-    return new NextResponse(mockMp3Data, {
+    return new NextResponse(fileData, {
       status: 200,
       headers: {
         'Content-Type': 'audio/mpeg',
         'Content-Disposition': `attachment; filename="${job.result.fileName}"`,
+        'Content-Length': fileData.length.toString(),
       },
     });
   } catch (error) {

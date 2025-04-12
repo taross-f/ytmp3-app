@@ -36,7 +36,7 @@ COPY . .
 RUN NEXT_LINT_ERROR_EXIT=false bun run build
 
 # Expose the port
-EXPOSE 3000
-
+EXPOSE 8080
+ENV PORT=8080
 # Start the application
 CMD ["bun", "start"]

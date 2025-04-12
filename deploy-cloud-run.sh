@@ -94,6 +94,7 @@ gcloud run deploy ${APP_NAME} \
     --memory=512Mi \
     --concurrency=80 \
     --set-env-vars="GCS_BUCKET_NAME=${GCS_BUCKET_NAME}" \
+    --timeout=300s \
     --allow-unauthenticated
 
 SERVICE_URL=$(gcloud run services describe ${APP_NAME} --region=${REGION} --format='value(status.url)')

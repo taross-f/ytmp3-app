@@ -1,10 +1,29 @@
 set -e
 
-PROJECT_ID="youtube-mp3-converter"
-REGION="asia-northeast1"
-APP_NAME="youtube-mp3-app"
+# Load environment variables from .env file if it exists
+if [ -f .env ]; then
+    echo "Loading environment variables from .env file..."
+    source .env
+fi
+
+# Use environment variables with defaults
+PROJECT_ID="${PROJECT_ID:-xxxxxxx}"
+REGION="${REGION:-asia-northeast1}"
+APP_NAME="${APP_NAME:-xxxxxxx}"
+GCS_BUCKET_NAME="${GCS_BUCKET_NAME:-xxxxxxx}"
 SERVICE_ACCOUNT="${APP_NAME}@${PROJECT_ID}.iam.gserviceaccount.com"
-GCS_BUCKET_NAME="youtube-mp3-converter-files"
+
+# Confirm settings with user
+echo "Deployment configuration:"
+echo "  Project ID: ${PROJECT_ID}"
+echo "  Region: ${REGION}"
+echo "  App Name: ${APP_NAME}"
+echo "  GCS Bucket: ${GCS_BUCKET_NAME}"
+echo "  Service Account: ${SERVICE_ACCOUNT}"
+echo ""
+echo "To change these settings, set the corresponding environment variables or create a .env file."
+echo "Press Enter to continue or Ctrl+C to abort..."
+read -r
 
 if ! command -v gcloud &> /dev/null; then
     echo "Error: gcloud CLI is not installed. Please install it first."

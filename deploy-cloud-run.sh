@@ -67,6 +67,10 @@ if ! gcloud iam service-accounts describe ${SERVICE_ACCOUNT} &> /dev/null; then
     gcloud iam service-accounts create ${APP_NAME} \
         --display-name="YouTube MP3 Converter App"
     echo "Created service account ${SERVICE_ACCOUNT}"
+    
+    # Add delay to allow service account to propagate
+    echo "Waiting for service account to propagate (10 seconds)..."
+    sleep 10
 else
     echo "Service account ${SERVICE_ACCOUNT} already exists"
 fi

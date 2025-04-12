@@ -35,24 +35,50 @@ export async function POST(request: Request) {
 
 async function getVideoInfo(url: string, videoId: string) {
   try {
-    const { stdout } = await execAsync(`yt-dlp --dump-json "${url}"`);
-    const videoInfo = JSON.parse(stdout);
+    const oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`;
     
-    const title = videoInfo.title || 'Unknown Title';
-    const thumbnail = videoInfo.thumbnail || `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
-    const author = videoInfo.uploader || 'Unknown Author';
+    try {
+      const response = await fetch(oembedUrl);
+      if (response.ok) {
+        const data = await response.json();
+        
+        const thumbnail = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+        
+        return {
+          id: videoId,
+          title: data.title || 'Unknown Title',
+          thumbnail,
+          author: data.author_name || 'Unknown Author',
+          duration: '0:00' // OEmbedでは動画の長さは取得できない
+        };
+      }
+    } catch (oembedError) {
+      console.error('OEmbed取得エラー:', oembedError);
+    }
     
-    const duration = formatDuration(videoInfo.duration || 0);
-    
-    return {
-      id: videoId,
-      title,
-      thumbnail,
-      author,
-      duration
-    };
+    try {
+      const { stdout } = await execAsync(`yt-dlp --dump-json --no-check-certificate --no-warnings "${url}"`);
+      const videoInfo = JSON.parse(stdout);
+      
+      const title = videoInfo.title || 'Unknown Title';
+      const thumbnail = videoInfo.thumbnail || `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+      const author = videoInfo.uploader || 'Unknown Author';
+      
+      const duration = formatDuration(videoInfo.duration || 0);
+      
+      return {
+        id: videoId,
+        title,
+        thumbnail,
+        author,
+        duration
+      };
+    } catch (ytdlpError) {
+      console.error('yt-dlpエラー:', ytdlpError);
+      throw ytdlpError;
+    }
   } catch (error) {
-    console.error('yt-dlpエラー:', error);
+    console.error('動画情報取得エラー:', error);
     return {
       id: videoId,
       title: 'Video Title (情報取得に失敗しました)',

@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState } from "react";
 import { YouTubeUrlForm } from "../../components/youtube/YouTubeUrlForm";
 import { VideoInfo } from "../../components/youtube/VideoInfo";

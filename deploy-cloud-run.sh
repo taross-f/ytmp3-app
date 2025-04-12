@@ -93,7 +93,7 @@ gcloud run deploy ${APP_NAME} \
     --service-account=${SERVICE_ACCOUNT} \
     --memory=512Mi \
     --concurrency=80 \
-    --set-env-vars="GCS_BUCKET_NAME=${GCS_BUCKET_NAME}" \
+    --set-env-vars="GCS_BUCKET_NAME=${GCS_BUCKET_NAME},PORT=8080" \
     --timeout=300s \
     --allow-unauthenticated
 

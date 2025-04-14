@@ -82,7 +82,7 @@ gcloud storage buckets add-iam-policy-binding gs://${GCS_BUCKET_NAME} \
 
 echo "Building and pushing Docker image..."
 IMAGE_NAME="gcr.io/${PROJECT_ID}/${APP_NAME}:latest"
-docker build -t ${IMAGE_NAME} .
+docker build --platform=linux/amd64 -t ${IMAGE_NAME} .
 docker push ${IMAGE_NAME}
 
 echo "Deploying to Cloud Run..."
@@ -93,7 +93,7 @@ gcloud run deploy ${APP_NAME} \
     --service-account=${SERVICE_ACCOUNT} \
     --memory=512Mi \
     --concurrency=80 \
-    --set-env-vars="GCS_BUCKET_NAME=${GCS_BUCKET_NAME},PORT=8080" \
+    --set-env-vars="GCS_BUCKET_NAME=${GCS_BUCKET_NAME}" \
     --timeout=300s \
     --allow-unauthenticated
 

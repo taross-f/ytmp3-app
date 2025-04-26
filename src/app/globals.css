@@ -76,6 +76,23 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+  
+  /* Gradient colors */
+  --gradient-purple: #5a189a;
+  --gradient-red: #e63946;
+  --gradient-green: #38b000;
+  --gradient-blue: #0077b6;
+  --gradient-yellow: #ffb703;
+  
+  /* Button gradients */
+  --button-gradient: linear-gradient(90deg, var(--gradient-purple), var(--gradient-blue));
+  --button-gradient-hover: linear-gradient(90deg, var(--gradient-blue), var(--gradient-purple));
+  --button-gradient-success: linear-gradient(90deg, var(--gradient-blue), var(--gradient-green));
+  --button-gradient-success-hover: linear-gradient(90deg, var(--gradient-green), var(--gradient-blue));
+  
+  /* Background gradients */
+  --bg-gradient-main: linear-gradient(135deg, var(--gradient-purple), var(--gradient-red), var(--gradient-green));
+  --bg-gradient-card: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.7));
 }
 
 .dark {
@@ -110,6 +127,9 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+  
+  /* Dark mode gradient adjustments */
+  --bg-gradient-card: linear-gradient(135deg, rgba(30, 30, 30, 0.9), rgba(20, 20, 20, 0.7));
 }
 
 @layer base {
@@ -118,5 +138,65 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+/* Custom gradient classes */
+.gradient-bg {
+  background: var(--bg-gradient-main);
+  background-size: 400% 400%;
+  animation: gradient-animation 15s ease infinite;
+}
+
+.gradient-card {
+  background: var(--bg-gradient-card);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.gradient-button {
+  background: var(--button-gradient);
+  background-size: 200% 200%;
+  transition: all 0.3s ease;
+  border: none;
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+}
+
+.gradient-button:hover {
+  background: var(--button-gradient-hover);
+  background-size: 200% 200%;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+.gradient-button-success {
+  background: var(--button-gradient-success);
+  background-size: 200% 200%;
+}
+
+.gradient-button-success:hover {
+  background: var(--button-gradient-success-hover);
+  background-size: 200% 200%;
+}
+
+.glass-effect {
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+@keyframes gradient-animation {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
   }
 }

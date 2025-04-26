@@ -80,7 +80,11 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function startConversionProcess(jobId: string, url: string, format: "mp3" | "mp4") {
+async function startConversionProcess(
+  jobId: string,
+  url: string,
+  format: "mp3" | "mp4"
+) {
   try {
     const job = conversionJobs.get(jobId);
     if (!job) return;
@@ -98,6 +102,17 @@ async function startConversionProcess(jobId: string, url: string, format: "mp3" 
     job.progress = 10;
     conversionJobs.set(jobId, job);
 
+    // 利用可能なフォーマットをチェック
+    try {
+      const formatCheckCmd = `yt-dlp --list-formats --no-check-certificate --no-warnings --geo-bypass "${url}"`;
+      console.log("フォーマットチェックコマンド:", formatCheckCmd);
+      const { stdout: formatList } = await execAsync(formatCheckCmd);
+      console.log("利用可能なフォーマット:", formatList);
+    } catch (formatError) {
+      console.warn("フォーマットリスト取得エラー:", formatError);
+      // エラーがあっても続行
+    }
+
     let downloadCmd;
     if (format === "mp3") {
       downloadCmd = `yt-dlp -f 'bestaudio[ext=m4a]/bestaudio' --no-check-certificate --no-warnings --geo-bypass --ignore-errors --user-agent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36" --add-header "Accept-Language: ja-JP,ja;q=0.9,en-US;q=0.8,en;q=0.7" --no-playlist -o "${path.join(
@@ -105,12 +120,12 @@ async function startConversionProcess(jobId: string, url: string, format: "mp3" 
         "audio.%(ext)s"
       )}" "${url}"`;
     } else {
-      downloadCmd = `yt-dlp -f 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best' --no-check-certificate --no-warnings --geo-bypass --ignore-errors --user-agent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36" --add-header "Accept-Language: ja-JP,ja;q=0.9,en-US;q=0.8,en;q=0.7" --no-playlist --merge-output-format mp4 -o "${path.join(
+      downloadCmd = `yt-dlp -f 'bestvideo+bestaudio/best' --no-check-certificate --no-warnings --geo-bypass --ignore-errors --user-agent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36" --add-header "Accept-Language: ja-JP,ja;q=0.9,en-US;q=0.8,en;q=0.7" --no-playlist --merge-output-format mp4 -o "${path.join(
         outputDir,
         "video.%(ext)s"
       )}" "${url}"`;
     }
-    
+
     console.log(`ダウンロードコマンド (${format}):`, downloadCmd);
 
     try {
@@ -121,12 +136,17 @@ async function startConversionProcess(jobId: string, url: string, format: "mp3" 
       conversionJobs.set(jobId, job);
 
       const files = fs.readdirSync(outputDir);
-      const downloadedFile = format === "mp3" 
-                           ? files.find((file) => file.startsWith("audio."))
-                           : files.find((file) => file.startsWith("video."));
+      const downloadedFile =
+        format === "mp3"
+          ? files.find((file) => file.startsWith("audio."))
+          : files.find((file) => file.startsWith("video."));
 
       if (!downloadedFile) {
-        throw new Error(`ダウンロードした${format === "mp3" ? "オーディオ" : "ビデオ"}ファイルが見つかりません`);
+        throw new Error(
+          `ダウンロードした${
+            format === "mp3" ? "オーディオ" : "ビデオ"
+          }ファイルが見つかりません`
+        );
       }
 
       const downloadedPath = path.join(outputDir, downloadedFile);
@@ -163,6 +183,52 @@ async function startConversionProcess(jobId: string, url: string, format: "mp3" 
       console.log(`変換完了 (${format}):`, completedJob);
     } catch (downloadError) {
       console.error(`ダウンロードエラー (${format}):`, downloadError);
+
+      // 最初のダウンロード試行が失敗した場合、別のフォーマットで再試行
+      if (format === "mp4") {
+        console.log("代替フォーマットでMP4ダウンロードを再試行します");
+        try {
+          // より柔軟なフォーマット指定でyt-dlpを再実行
+          const fallbackCmd = `yt-dlp -f 'best' --no-check-certificate --no-warnings --geo-bypass --ignore-errors --user-agent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36" --add-header "Accept-Language: ja-JP,ja;q=0.9,en-US;q=0.8,en;q=0.7" --no-playlist -o "${path.join(
+            outputDir,
+            "video.%(ext)s"
+          )}" "${url}"`;
+
+          console.log("代替ダウンロードコマンド:", fallbackCmd);
+          const { stdout: fallbackOutput } = await execAsync(fallbackCmd);
+          console.log("代替ダウンロード出力:", fallbackOutput);
+
+          const files = fs.readdirSync(outputDir);
+          const downloadedFile = files.find((file) =>
+            file.startsWith("video.")
+          );
+
+          if (!downloadedFile) {
+            throw new Error("代替ダウンロードもファイルが見つかりません");
+          }
+
+          const downloadedPath = path.join(outputDir, downloadedFile);
+          fs.renameSync(downloadedPath, outputPath);
+
+          const completedJob = conversionJobs.get(jobId);
+          if (!completedJob) return;
+
+          completedJob.status = "completed";
+          completedJob.progress = 100;
+          completedJob.result = {
+            downloadUrl: `/api/download/${jobId}`,
+            fileName: `${videoId}.${format}`,
+            filePath: outputPath,
+          };
+
+          conversionJobs.set(jobId, completedJob);
+          console.log("代替ダウンロード完了:", completedJob);
+          return;
+        } catch (fallbackError) {
+          console.error("代替ダウンロードエラー:", fallbackError);
+          throw fallbackError;
+        }
+      }
 
       if (format === "mp3") {
         job.progress = 50;

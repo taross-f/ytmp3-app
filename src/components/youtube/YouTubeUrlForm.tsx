@@ -48,17 +48,17 @@ export function YouTubeUrlForm({ onSubmit }: YouTubeUrlFormProps) {
           placeholder="YouTube URLを入力（例：https://www.youtube.com/watch?v=..."
           value={url}
           onChange={(e) => setUrl(e.target.value)}
-          className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-5 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-white/30 text-white shadow-lg"
           disabled={isLoading}
         />
         {error && (
-          <p className="text-red-500 text-sm">{error}</p>
+          <p className="text-red-300 text-sm">{error}</p>
         )}
       </div>
       <button 
         type="submit" 
         disabled={isLoading} 
-        className="w-full px-4 py-2 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full px-5 py-3 gradient-button text-white font-medium rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {isLoading ? 'チェック中...' : '動画情報を取得'}
       </button>

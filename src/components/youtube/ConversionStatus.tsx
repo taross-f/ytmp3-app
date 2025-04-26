@@ -72,34 +72,34 @@ export function ConversionStatus({ jobId, onComplete }: ConversionStatusProps) {
   }
 
   return (
-    <div className="p-4 border rounded-md">
-      <h3 className="font-medium mb-2">変換状態</h3>
+    <div className="p-6 gradient-card rounded-xl shadow-xl">
+      <h3 className="font-medium mb-4 text-white">変換状態</h3>
       
-      <div className="mb-4">
-        <div className="w-full bg-gray-200 rounded-full h-2.5">
+      <div className="mb-6">
+        <div className="w-full bg-white/20 rounded-full h-3 backdrop-blur-sm">
           <div 
-            className="bg-blue-600 h-2.5 rounded-full" 
+            className="bg-gradient-to-r from-blue-400 to-purple-500 h-3 rounded-full shadow-inner" 
             style={{ width: `${statusData.progress}%` }}
           ></div>
         </div>
-        <p className="text-sm mt-1 text-gray-600">{statusData.progress}% 完了</p>
+        <p className="text-sm mt-2 text-white/80">{statusData.progress}% 完了</p>
       </div>
       
       {statusData.status === 'pending' && (
-        <p>変換を準備中...</p>
+        <p className="text-white">変換を準備中...</p>
       )}
       
       {statusData.status === 'processing' && (
-        <p>変換処理中...</p>
+        <p className="text-white">変換処理中...</p>
       )}
       
       {statusData.status === 'completed' && statusData.result && (
         <div>
-          <p className="text-green-600 mb-2">変換が完了しました！</p>
+          <p className="text-green-300 mb-3">変換が完了しました！</p>
           <a 
             href={statusData.result.downloadUrl} 
             download={statusData.result.fileName}
-            className="inline-block px-4 py-2 bg-green-600 text-white font-medium rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+            className="inline-block px-6 py-3 gradient-button-success text-white font-medium rounded-lg shadow-lg hover:shadow-xl transition-all duration-300"
           >
             {statusData.result.fileName?.endsWith('.mp3') ? 'MP3をダウンロード' : '動画をダウンロード'}
           </a>
@@ -107,7 +107,7 @@ export function ConversionStatus({ jobId, onComplete }: ConversionStatusProps) {
       )}
       
       {statusData.status === 'failed' && (
-        <p className="text-red-600">
+        <p className="text-red-300">
           変換に失敗しました: {statusData.error || '不明なエラー'}
         </p>
       )}

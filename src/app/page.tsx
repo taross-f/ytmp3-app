@@ -18,16 +18,11 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [conversionJobId, setConversionJobId] = useState<string | null>(null);
-  const [downloadInfo, setDownloadInfo] = useState<{
-    url: string;
-    fileName: string;
-  } | null>(null);
 
   const handleUrlSubmit = async (url: string) => {
     setIsLoading(true);
     setError(null);
     setConversionJobId(null);
-    setDownloadInfo(null);
 
     try {
       const response = await fetch("/api/video-info", {
@@ -89,7 +84,7 @@ export default function Home() {
   };
 
   const handleConversionComplete = (downloadUrl: string, fileName: string) => {
-    setDownloadInfo({ url: downloadUrl, fileName });
+    console.log("変換完了:", downloadUrl, fileName);
   };
 
   return (

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Image from "next/image";
 
 interface VideoInfoProps {
   videoData: {
@@ -21,9 +22,11 @@ export function VideoInfo({ videoData, onConvert }: VideoInfoProps) {
   return (
     <div className="flex flex-col md:flex-row gap-6 rounded-xl gradient-card p-6 shadow-xl">
       <div className="flex-shrink-0">
-        <img
+        <Image
           src={videoData.thumbnail}
           alt={videoData.title}
+          width={224}
+          height={126}
           className="w-full md:w-56 h-auto rounded-lg shadow-lg"
         />
       </div>

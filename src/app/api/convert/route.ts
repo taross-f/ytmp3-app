@@ -294,7 +294,8 @@ function extractVideoId(url: string): string {
   return videoId;
 }
 
-export function getConversionJob(jobId: string): ConversionJob | undefined {
+// エクスポートを削除して内部関数に変更
+function getConversionJob(jobId: string): ConversionJob | undefined {
   return conversionJobs.get(jobId);
 }
 

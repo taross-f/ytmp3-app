@@ -3,8 +3,9 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   /* config options here */
   output: "standalone",
-  experimental: {
-    serverComponentsExternalPackages: [],
+  serverExternalPackages: [],
+  images: {
+    domains: ["img.youtube.com"],
   },
 };
 

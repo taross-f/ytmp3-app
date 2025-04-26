@@ -101,7 +101,7 @@ export function ConversionStatus({ jobId, onComplete }: ConversionStatusProps) {
             download={statusData.result.fileName}
             className="inline-block px-4 py-2 bg-green-600 text-white font-medium rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
           >
-            MP3をダウンロード
+            {statusData.result.fileName?.endsWith('.mp3') ? 'MP3をダウンロード' : '動画をダウンロード'}
           </a>
         </div>
       )}

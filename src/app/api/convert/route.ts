@@ -17,11 +17,13 @@ const requestSchema = z.object({
       (url) => url.includes("youtube.com/watch") || url.includes("youtu.be/"),
       { message: "有効なYouTube URLを入力してください" }
     ),
+  format: z.enum(["mp3", "mp4"]).default("mp3"),
 });
 
 interface ConversionJob {
   id: string;
   url: string;
+  format: "mp3" | "mp4"; // 形式を追加
   status: "pending" | "processing" | "completed" | "failed";
   progress: number;
   error?: string;
@@ -47,12 +49,13 @@ try {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { url } = requestSchema.parse(body);
+    const { url, format = "mp3" } = requestSchema.parse(body);
 
     const jobId = uuidv4();
     const job: ConversionJob = {
       id: jobId,
       url,
+      format, // 形式を追加
       status: "pending",
       progress: 0,
       createdAt: new Date(),
@@ -60,7 +63,7 @@ export async function POST(request: NextRequest) {
 
     conversionJobs.set(jobId, job);
 
-    startConversionProcess(jobId, url);
+    startConversionProcess(jobId, url, format);
 
     return NextResponse.json({ jobId });
   } catch (error) {
@@ -77,7 +80,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function startConversionProcess(jobId: string, url: string) {
+async function startConversionProcess(jobId: string, url: string, format: "mp3" | "mp4") {
   try {
     const job = conversionJobs.get(jobId);
     if (!job) return;
@@ -90,43 +93,61 @@ async function startConversionProcess(jobId: string, url: string) {
     const outputDir = path.join(TMP_DIR, jobId);
     await mkdir(outputDir, { recursive: true });
 
-    const outputPath = path.join(outputDir, `${videoId}.mp3`);
+    const fileExt = format === "mp3" ? "mp3" : "mp4";
+    const outputPath = path.join(outputDir, `${videoId}.${fileExt}`);
 
     job.progress = 10;
     conversionJobs.set(jobId, job);
 
-    const downloadCmd = `yt-dlp -f 'bestaudio[ext=m4a]/bestaudio' --no-check-certificate --no-warnings --geo-bypass --ignore-errors --user-agent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36" --add-header "Accept-Language: ja-JP,ja;q=0.9,en-US;q=0.8,en;q=0.7" --no-playlist -o "${path.join(
-      outputDir,
-      "audio.%(ext)s"
-    )}" "${url}"`;
-    console.log("ダウンロードコマンド:", downloadCmd);
+    let downloadCmd;
+    if (format === "mp3") {
+      downloadCmd = `yt-dlp -f 'bestaudio[ext=m4a]/bestaudio' --no-check-certificate --no-warnings --geo-bypass --ignore-errors --user-agent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36" --add-header "Accept-Language: ja-JP,ja;q=0.9,en-US;q=0.8,en;q=0.7" --no-playlist -o "${path.join(
+        outputDir,
+        "audio.%(ext)s"
+      )}" "${url}"`;
+    } else {
+      downloadCmd = `yt-dlp -f 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best' --no-check-certificate --no-warnings --geo-bypass --ignore-errors --user-agent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36" --add-header "Accept-Language: ja-JP,ja;q=0.9,en-US;q=0.8,en;q=0.7" --no-playlist --merge-output-format mp4 -o "${path.join(
+        outputDir,
+        "video.%(ext)s"
+      )}" "${url}"`;
+    }
+    
+    console.log(`ダウンロードコマンド (${format}):`, downloadCmd);
 
     try {
       const { stdout: downloadOutput } = await execAsync(downloadCmd);
-      console.log("ダウンロード出力:", downloadOutput);
+      console.log(`ダウンロード出力 (${format}):`, downloadOutput);
 
       job.progress = 50;
       conversionJobs.set(jobId, job);
 
       const files = fs.readdirSync(outputDir);
-      const audioFile = files.find((file) => file.startsWith("audio."));
+      const downloadedFile = format === "mp3" 
+                           ? files.find((file) => file.startsWith("audio."))
+                           : files.find((file) => file.startsWith("video."));
 
-      if (!audioFile) {
-        throw new Error("ダウンロードしたオーディオファイルが見つかりません");
+      if (!downloadedFile) {
+        throw new Error(`ダウンロードした${format === "mp3" ? "オーディオ" : "ビデオ"}ファイルが見つかりません`);
       }
 
-      const audioPath = path.join(outputDir, audioFile);
+      const downloadedPath = path.join(outputDir, downloadedFile);
 
-      const convertCmd = `ffmpeg -i "${audioPath}" -codec:a libmp3lame -qscale:a 2 "${outputPath}"`;
-      console.log("変換コマンド:", convertCmd);
+      if (format === "mp3") {
+        const convertCmd = `ffmpeg -i "${downloadedPath}" -codec:a libmp3lame -qscale:a 2 "${outputPath}"`;
+        console.log("変換コマンド:", convertCmd);
 
-      const { stdout: convertOutput } = await execAsync(convertCmd);
-      console.log("変換出力:", convertOutput);
+        const { stdout: convertOutput } = await execAsync(convertCmd);
+        console.log("変換出力:", convertOutput);
+      } else {
+        fs.renameSync(downloadedPath, outputPath);
+      }
 
       job.progress = 90;
       conversionJobs.set(jobId, job);
 
-      fs.unlinkSync(audioPath);
+      if (downloadedPath !== outputPath && fs.existsSync(downloadedPath)) {
+        fs.unlinkSync(downloadedPath);
+      }
 
       const completedJob = conversionJobs.get(jobId);
       if (!completedJob) return;
@@ -135,43 +156,47 @@ async function startConversionProcess(jobId: string, url: string) {
       completedJob.progress = 100;
       completedJob.result = {
         downloadUrl: `/api/download/${jobId}`,
-        fileName: `${videoId}.mp3`,
+        fileName: `${videoId}.${fileExt}`,
         filePath: outputPath,
       };
 
       conversionJobs.set(jobId, completedJob);
-      console.log("変換完了:", completedJob);
+      console.log(`変換完了 (${format}):`, completedJob);
     } catch (downloadError) {
-      console.error("ダウンロードエラー:", downloadError);
+      console.error(`ダウンロードエラー (${format}):`, downloadError);
 
-      job.progress = 50;
-      conversionJobs.set(jobId, job);
-
-      try {
-        const demoCmd = `ffmpeg -f lavfi -i anullsrc=r=44100:cl=stereo -t 10 -codec:a libmp3lame -qscale:a 2 "${outputPath}"`;
-        console.log("デモファイル生成コマンド:", demoCmd);
-
-        await execAsync(demoCmd);
-
-        job.progress = 90;
+      if (format === "mp3") {
+        job.progress = 50;
         conversionJobs.set(jobId, job);
 
-        const completedJob = conversionJobs.get(jobId);
-        if (!completedJob) return;
+        try {
+          const demoCmd = `ffmpeg -f lavfi -i anullsrc=r=44100:cl=stereo -t 10 -codec:a libmp3lame -qscale:a 2 "${outputPath}"`;
+          console.log("デモファイル生成コマンド:", demoCmd);
 
-        completedJob.status = "completed";
-        completedJob.progress = 100;
-        completedJob.result = {
-          downloadUrl: `/api/download/${jobId}`,
-          fileName: `${videoId}.mp3`,
-          filePath: outputPath,
-        };
+          await execAsync(demoCmd);
 
-        conversionJobs.set(jobId, completedJob);
-        console.log("デモファイル生成完了:", completedJob);
-      } catch (demoError) {
-        console.error("デモファイル生成エラー:", demoError);
-        throw demoError;
+          job.progress = 90;
+          conversionJobs.set(jobId, job);
+
+          const completedJob = conversionJobs.get(jobId);
+          if (!completedJob) return;
+
+          completedJob.status = "completed";
+          completedJob.progress = 100;
+          completedJob.result = {
+            downloadUrl: `/api/download/${jobId}`,
+            fileName: `${videoId}.mp3`,
+            filePath: outputPath,
+          };
+
+          conversionJobs.set(jobId, completedJob);
+          console.log("デモファイル生成完了:", completedJob);
+        } catch (demoError) {
+          console.error("デモファイル生成エラー:", demoError);
+          throw demoError;
+        }
+      } else {
+        throw downloadError;
       }
     }
   } catch (error) {
@@ -203,7 +228,7 @@ function extractVideoId(url: string): string {
   return videoId;
 }
 
-function getConversionJob(jobId: string): ConversionJob | undefined {
+export function getConversionJob(jobId: string): ConversionJob | undefined {
   return conversionJobs.get(jobId);
 }
 

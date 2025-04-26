@@ -93,8 +93,7 @@ async function startConversionProcess(jobId: string, url: string, format: "mp3" 
     const outputDir = path.join(TMP_DIR, jobId);
     await mkdir(outputDir, { recursive: true });
 
-    const fileExt = format === "mp3" ? "mp3" : "mp4";
-    const outputPath = path.join(outputDir, `${videoId}.${fileExt}`);
+    const outputPath = path.join(outputDir, `${videoId}.${format}`);
 
     job.progress = 10;
     conversionJobs.set(jobId, job);
@@ -156,7 +155,7 @@ async function startConversionProcess(jobId: string, url: string, format: "mp3" 
       completedJob.progress = 100;
       completedJob.result = {
         downloadUrl: `/api/download/${jobId}`,
-        fileName: `${videoId}.${fileExt}`,
+        fileName: `${videoId}.${format}`,
         filePath: outputPath,
       };
 
@@ -185,7 +184,7 @@ async function startConversionProcess(jobId: string, url: string, format: "mp3" 
           completedJob.progress = 100;
           completedJob.result = {
             downloadUrl: `/api/download/${jobId}`,
-            fileName: `${videoId}.mp3`,
+            fileName: `${videoId}.${format}`,
             filePath: outputPath,
           };
 

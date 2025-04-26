@@ -143,28 +143,6 @@ export default function Home() {
               />
             </section>
           )}
-
-          {downloadInfo && (
-            <section className="mb-8 p-6 gradient-card rounded-xl shadow-xl border border-green-500/30">
-              <h2 className="text-xl font-semibold mb-4 text-gray-800">
-                ダウンロード準備完了
-              </h2>
-              <p className="mb-4 text-gray-800">
-                {downloadInfo.fileName.endsWith(".mp3")
-                  ? "MP3ファイルのダウンロードが準備できました。"
-                  : "動画ファイルのダウンロードが準備できました。"}
-              </p>
-              <a
-                href={downloadInfo.url}
-                download={downloadInfo.fileName}
-                className="inline-block px-6 py-3 gradient-button-success text-white font-medium rounded-lg shadow-lg hover:shadow-xl transition-all duration-300"
-              >
-                {downloadInfo.fileName.endsWith(".mp3")
-                  ? "MP3をダウンロード"
-                  : "動画をダウンロード"}
-              </a>
-            </section>
-          )}
         </div>
       </main>
 

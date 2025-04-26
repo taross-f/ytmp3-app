@@ -120,7 +120,8 @@ async function startConversionProcess(
         "audio.%(ext)s"
       )}" "${url}"`;
     } else {
-      downloadCmd = `yt-dlp -f 'bestvideo+bestaudio/best' --no-check-certificate --no-warnings --geo-bypass --ignore-errors --user-agent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36" --add-header "Accept-Language: ja-JP,ja;q=0.9,en-US;q=0.8,en;q=0.7" --no-playlist --merge-output-format mp4 -o "${path.join(
+      // MP4フォーマットの修正 - Macとの互換性を高めるためにH.264+AACを優先
+      downloadCmd = `yt-dlp -f 'bestvideo[ext=mp4][vcodec^=avc]+bestaudio[ext=m4a]/bestvideo[vcodec^=avc]+bestaudio/best[ext=mp4]/best' --no-check-certificate --no-warnings --geo-bypass --ignore-errors --user-agent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36" --add-header "Accept-Language: ja-JP,ja;q=0.9,en-US;q=0.8,en;q=0.7" --no-playlist --merge-output-format mp4 -o "${path.join(
         outputDir,
         "video.%(ext)s"
       )}" "${url}"`;
@@ -188,8 +189,8 @@ async function startConversionProcess(
       if (format === "mp4") {
         console.log("代替フォーマットでMP4ダウンロードを再試行します");
         try {
-          // より柔軟なフォーマット指定でyt-dlpを再実行
-          const fallbackCmd = `yt-dlp -f 'best' --no-check-certificate --no-warnings --geo-bypass --ignore-errors --user-agent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36" --add-header "Accept-Language: ja-JP,ja;q=0.9,en-US;q=0.8,en;q=0.7" --no-playlist -o "${path.join(
+          // より柔軟なフォーマット指定でyt-dlpを再実行 - Macとの互換性を高めるためにH.264コーデック優先
+          const fallbackCmd = `yt-dlp -f 'bestvideo[vcodec^=avc]+bestaudio[acodec^=mp4a]/best[ext=mp4]/best' --no-check-certificate --no-warnings --geo-bypass --ignore-errors --user-agent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36" --add-header "Accept-Language: ja-JP,ja;q=0.9,en-US;q=0.8,en;q=0.7" --no-playlist --merge-output-format mp4 -o "${path.join(
             outputDir,
             "video.%(ext)s"
           )}" "${url}"`;

@@ -65,7 +65,7 @@ export function ConversionStatus({ jobId, onComplete }: ConversionStatusProps) {
   if (!statusData) {
     return (
       <div className="text-center p-4 gradient-card rounded-xl shadow-xl">
-        <p className="text-white">変換状態を取得中...</p>
+        <p className="text-gray-800">変換状態を取得中...</p>
       </div>
     );
   }
@@ -105,6 +105,20 @@ export function ConversionStatus({ jobId, onComplete }: ConversionStatusProps) {
       {statusData.status === "completed" && statusData.result && (
         <div>
           <p className="text-green-800 mb-3">変換が完了しました！</p>
+
+          {statusData.result.fileName?.endsWith(".mp4") && (
+            <div className="mb-4">
+              <p className="text-sm text-gray-700 mb-2">プレビュー:</p>
+              <video
+                controls
+                className="w-full rounded-lg shadow-lg mb-3"
+                src={`${statusData.result.downloadUrl}?x-content-disposition=inline`}
+              >
+                お使いのブラウザはビデオタグをサポートしていません。
+              </video>
+            </div>
+          )}
+
           <a
             href={statusData.result.downloadUrl}
             download={statusData.result.fileName}

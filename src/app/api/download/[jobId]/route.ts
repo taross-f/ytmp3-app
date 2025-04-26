@@ -52,17 +52,29 @@ export async function GET(request: Request) {
     }
 
     const fileData = await readFileAsync(job.result.filePath);
-    
-    const contentType = job.result.fileName.endsWith('.mp3') 
-                      ? "audio/mpeg" 
-                      : "video/mp4";
+
+    // Content-Typeの適切な設定
+    let contentType = "application/octet-stream"; // デフォルト
+    if (job.result.fileName.endsWith(".mp3")) {
+      contentType = "audio/mpeg";
+    } else if (job.result.fileName.endsWith(".mp4")) {
+      contentType = "video/mp4";
+    }
+
+    // ダウンロードではなく直接再生を可能にするために、Content-Dispositionを調整
+    const contentDisposition =
+      request.headers.get("x-content-disposition") === "inline"
+        ? `inline; filename="${job.result.fileName}"`
+        : `attachment; filename="${job.result.fileName}"`;
 
     return new NextResponse(fileData, {
       status: 200,
       headers: {
         "Content-Type": contentType,
-        "Content-Disposition": `attachment; filename="${job.result.fileName}"`,
+        "Content-Disposition": contentDisposition,
         "Content-Length": fileData.length.toString(),
+        "Accept-Ranges": "bytes",
+        "Cache-Control": "public, max-age=3600",
       },
     });
   } catch (error) {

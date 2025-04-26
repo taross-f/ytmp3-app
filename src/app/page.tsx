@@ -50,7 +50,7 @@ export default function Home() {
     }
   };
 
-  const handleConvert = async (videoId: string) => {
+  const handleConvert = async (videoId: string, format: 'mp3' | 'mp4') => {
     if (!videoData) return;
     
     setError(null);
@@ -61,7 +61,10 @@ export default function Home() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ url: `https://www.youtube.com/watch?v=${videoId}` }),
+        body: JSON.stringify({ 
+          url: `https://www.youtube.com/watch?v=${videoId}`,
+          format
+        }),
       });
       
       if (!response.ok) {
@@ -127,13 +130,17 @@ export default function Home() {
           {downloadInfo && (
             <section className="mb-8 p-4 bg-green-50 border border-green-200 rounded-md">
               <h2 className="text-xl font-semibold mb-4">ダウンロード準備完了</h2>
-              <p className="mb-4">MP3ファイルのダウンロードが準備できました。</p>
+              <p className="mb-4">
+                {downloadInfo.fileName.endsWith('.mp3')
+                  ? 'MP3ファイルのダウンロードが準備できました。'
+                  : '動画ファイルのダウンロードが準備できました。'}
+              </p>
               <a 
                 href={downloadInfo.url} 
                 download={downloadInfo.fileName}
                 className="inline-block px-4 py-2 bg-green-600 text-white font-medium rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
               >
-                MP3をダウンロード
+                {downloadInfo.fileName.endsWith('.mp3') ? 'MP3をダウンロード' : '動画をダウンロード'}
               </a>
             </section>
           )}

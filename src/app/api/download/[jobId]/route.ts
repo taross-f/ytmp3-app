@@ -52,11 +52,15 @@ export async function GET(request: Request) {
     }
 
     const fileData = await readFileAsync(job.result.filePath);
+    
+    const contentType = job.result.fileName.endsWith('.mp3') 
+                      ? "audio/mpeg" 
+                      : "video/mp4";
 
     return new NextResponse(fileData, {
       status: 200,
       headers: {
-        "Content-Type": "audio/mpeg",
+        "Content-Type": contentType,
         "Content-Disposition": `attachment; filename="${job.result.fileName}"`,
         "Content-Length": fileData.length.toString(),
       },

@@ -17,9 +17,7 @@ const nextConfig: NextConfig = {
     loaderFile: "./lib/cloudflare-image-loader.ts",
   },
   // Edge Runtime対応設定
-  experimental: {
-    serverComponentsExternalPackages: [],
-  },
+  experimental: {},
 };
 
 export default nextConfig;

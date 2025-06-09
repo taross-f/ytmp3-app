@@ -5,7 +5,9 @@ import * as matchers from '@testing-library/jest-dom/matchers'
 expect.extend(matchers)
 
 // Mock Next.js environment variables
-process.env.NODE_ENV = 'test'
+if (process.env.NODE_ENV !== 'test') {
+  process.env.NODE_ENV = 'test'
+}
 
 // Mock fetch if needed
 global.fetch = global.fetch || (() => Promise.resolve({

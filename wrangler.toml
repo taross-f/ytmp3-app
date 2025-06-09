@@ -1,0 +1,16 @@
+name = "youtube-converter"
+compatibility_date = "2025-05-01"
+compatibility_flags = ["nodejs_compat"]
+pages_build_output_dir = ".next/standalone"
+
+[vars]
+# 共通環境変数をここに設定
+NODE_VERSION = "19"
+
+# プレビュー環境の設定
+[env.preview]
+# プレビュー環境専用の設定がある場合はここに記述
+
+# 本番環境の設定
+[env.production]
+# 本番環境専用の設定がある場合はここに記述 

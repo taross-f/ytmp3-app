@@ -48,16 +48,17 @@ jobs:
 
       # 本番環境へのデプロイ（mainブランチの場合）
       - name: Deploy to Cloudflare Pages (Production)
-        if: github.ref == 'refs/heads/main' && secrets.CLOUDFLARE_API_TOKEN != ''
+        if: github.ref == 'refs/heads/main'
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy .next/standalone --project-name=youtube-converter
 
-      # プレビュー環境へのデプロイ（PRの場合）
+      # プレビュー環境へのデプロイ（PRの場合）  
       - name: Deploy to Cloudflare Pages (Preview)
-        if: github.event_name == 'pull_request' && secrets.CLOUDFLARE_API_TOKEN != ''
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}

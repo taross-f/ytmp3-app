@@ -15,7 +15,7 @@ A web application that converts YouTube videos to MP3 format.
 - Frontend & Backend: Next.js (App Router)
 - UI Library: Tailwind CSS + shadcn/ui
 - Package Manager: bun
-- Infrastructure: Google Cloud (Cloud Run, Cloud Storage)
+- Infrastructure: Cloudflare Pages
 - Video Processing: youtube-dl/yt-dlp + ffmpeg
 
 ## Getting Started
@@ -52,7 +52,46 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-## Development
+### Cloudflare Pages Development
+
+To use Cloudflare Pages specific features and bindings locally:
+
+```bash
+# Start the development server with Cloudflare Pages integration
+bun run pages:dev
+```
+
+## Deployment
+
+This project is configured to deploy to Cloudflare Pages. There are two deployment methods:
+
+### GitHub Integration (Recommended)
+
+1. Fork or push this repository to GitHub
+2. Login to Cloudflare Dashboard and go to Pages
+3. Click "Create a project" and select your repository
+4. Configure the build settings:
+   - Framework preset: Next.js
+   - Build command: npm run build
+   - Build output directory: .next/standalone
+5. Set environment variables as needed
+6. Deploy!
+
+GitHub Actions will automatically deploy your app on every push to the main branch. Preview deployments will be created for pull requests.
+
+### Manual Deployment
+
+You can also deploy manually using the Wrangler CLI:
+
+```bash
+# Build the project for Cloudflare Pages
+bun run pages:build
+
+# Deploy to Cloudflare Pages
+bun run pages:deploy
+```
+
+## Development Structure
 
 - `src/app`: Next.js App Router pages and API routes
 - `src/components`: React components
@@ -60,6 +99,13 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 - `src/types`: TypeScript type definitions
 - `src/hooks`: Custom React hooks
 - `src/styles`: Global styles and Tailwind CSS configuration
+- `.github/workflows`: GitHub Actions workflows for CI/CD
+- `wrangler.toml`: Cloudflare Pages configuration
+
+## Documentation
+
+- [Cloudflare Pages Setup](./doc/CLOUDFLARE_SETUP.md)
+- [Next.js Configuration for Cloudflare](./doc/CLOUDFLARE_NEXT_CONFIG.md)
 
 ## License
 

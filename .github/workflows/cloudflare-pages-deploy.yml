@@ -19,7 +19,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "19"
+          node-version: "20"
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v1
@@ -48,7 +48,7 @@ jobs:
 
       # 本番環境へのデプロイ（mainブランチの場合）
       - name: Deploy to Cloudflare Pages (Production)
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main' && secrets.CLOUDFLARE_API_TOKEN != ''
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -57,7 +57,7 @@ jobs:
 
       # プレビュー環境へのデプロイ（PRの場合）
       - name: Deploy to Cloudflare Pages (Preview)
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && secrets.CLOUDFLARE_API_TOKEN != ''
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
